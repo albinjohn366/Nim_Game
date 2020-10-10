@@ -101,7 +101,9 @@ class NimAI():
         Return the Q-value for the state `state` and the action `action`.
         If no Q-value exists yet in `self.q`, return 0.
         """
-        raise NotImplementedError
+        if (tuple(state), action) in self.q:
+            return self.q[(tuple(state), action)]
+        return 0
 
     def update_q_value(self, state, action, old_q, reward, future_rewards):
         """
@@ -118,7 +120,9 @@ class NimAI():
         `alpha` is the learning rate, and `new value estimate`
         is the sum of the current reward and estimated future rewards.
         """
-        raise NotImplementedError
+        self.q[(tuple(state), action)] = old_q + self.alpha * (reward +
+                                                               future_rewards
+                                                               - old_q)
 
     def best_future_reward(self, state):
         """
@@ -130,7 +134,18 @@ class NimAI():
         Q-value in `self.q`. If there are no available actions in
         `state`, return 0.
         """
-        raise NotImplementedError
+        actions = Nim.available_actions(state)
+        if not actions:
+            return 0
+        maximum_value = -1000
+        for action in actions:
+            if (tuple(state), action) not in self.q:
+                q_value = 0
+            else:
+                q_value = self.q[(tuple(state), action)]
+            if q_value > maximum_value:
+                maximum_value = q_value
+        return maximum_value
 
     def choose_action(self, state, epsilon=True):
         """
@@ -147,7 +162,21 @@ class NimAI():
         If multiple actions have the same Q-value, any of those
         options is an acceptable return value.
         """
-        raise NotImplementedError
+        orderd_actions = []
+        actions = list(Nim.available_actions(state))
+        for action in actions:
+            if (tuple(state), action) not in self.q:
+                orderd_actions.append((0, action))
+            else:
+                orderd_actions.append((self.q[(tuple(state), action)], action))
+
+        orderd_actions.sort(reverse=True)
+
+        if not epsilon:
+            return orderd_actions[0][1]
+        random_choice = random.choice(actions)
+        return random.choices([orderd_actions[0][1], random_choice],
+                              weights=[1 - self.epsilon, self.epsilon])[0]
 
 
 def train(n):
